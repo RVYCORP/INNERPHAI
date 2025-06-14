@@ -1,6 +1,6 @@
 {
   "name": "phai",
-  "homepage": "https:/raycorp.github.io/phai/"
+  "homepage": "https:/rvycorp.github.io/phai/"
   "version": "1.0.0",
   "type": "module",
   "description": "React TypeScript on Replit, using Vite bundler",
