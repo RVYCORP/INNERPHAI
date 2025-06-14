@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Chat, GenerateContentResponse, GroundingChunk as SDKGroundingChunk } from "@google/genai";
 import { PHAI_SYSTEM_PROMPT, GEMINI_MODEL_NAME } from '../constants';
 import { GroundingChunk as LocalGroundingChunk } from "../types";
@@ -7,9 +6,9 @@ let ai: GoogleGenAI | null = null;
 
 const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
-  
+
   const apiKey = import.meta.env.VITE_API_KEY;
-  
+
   console.log("Environment check:", {
     hasViteApiKey: !!apiKey,
     viteApiKeyLength: apiKey ? apiKey.length : 0,
@@ -71,7 +70,7 @@ export const sendPhaiMessage = async (chat: Chat, message: string): Promise<Send
             })
             .filter(chunk => chunk.web || chunk.retrievedContext); 
     }
-    
+
     return { text: response.text, groundingChunks: finalGroundingChunks };
 
   } catch (error) {
