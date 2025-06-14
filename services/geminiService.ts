@@ -1,40 +1,43 @@
-import { GoogleGenAI, Chat, GenerateContentResponse, GroundingChunk as SDKGroundingChunk } from "@google/genai";
+
+import { GoogleGenAI, Chat, GenerateContentResponse, GroundingChunk as SDKGroundingChunk, Content } from "@google/genai";
 import { PHAI_SYSTEM_PROMPT, GEMINI_MODEL_NAME } from '../constants';
-import { GroundingChunk as LocalGroundingChunk } from "../types";
+import { Message as LocalMessage, GroundingChunk as LocalGroundingChunk, Sender } from "../types";
+
 
 let ai: GoogleGenAI | null = null;
 
 const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
 
-  const apiKey = import.meta.env.VITE_API_KEY;
-
-  console.log("Environment check:", {
-    hasViteApiKey: !!apiKey,
-    viteApiKeyLength: apiKey ? apiKey.length : 0,
-    allEnvKeys: Object.keys(import.meta.env)
-  });
+  const apiKey = process.env.API_KEY; 
 
   if (apiKey) {
-    console.log("Initializing GoogleGenAI with API key");
-    ai = new GoogleGenAI({ apiKey });
+    ai = new GoogleGenAI({ apiKey }); 
     return ai;
   } else {
-    console.error("GEMINI_API_KEY is not available. Gemini Service cannot be initialized. Please ensure the GEMINI_API_KEY is set in Replit Secrets.");
+    console.error("API_KEY is not available. Gemini Service cannot be initialized. Ensure process.env.API_KEY is set.");
     return null;
   }
 };
 
-export const startPhaiChat = (): Chat | null => {
+export const convertMessagesToGeminiHistory = (messages: LocalMessage[]): Content[] => {
+  return messages.map(msg => ({
+    role: msg.sender === Sender.User ? 'user' : 'model',
+    parts: [{ text: msg.text }],
+  }));
+};
+
+export const startPhaiChat = (history?: Content[]): Chat | null => {
   const currentAi = initializeAi();
   if (!currentAi) {
     return null;
   }
   return currentAi.chats.create({
     model: GEMINI_MODEL_NAME,
-    config: {
+    history: history || [], 
+    config: { 
       systemInstruction: PHAI_SYSTEM_PROMPT,
-      tools: [{ googleSearch: {} }]
+      tools: [{ googleSearch: {} }] 
     },
   });
 };
@@ -47,7 +50,6 @@ interface SendMessageResult {
 export const sendPhaiMessage = async (chat: Chat, message: string): Promise<SendMessageResult> => {
   try {
     let response: GenerateContentResponse;
-
     response = await chat.sendMessage({ message: message.trim() }); 
 
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
@@ -56,7 +58,7 @@ export const sendPhaiMessage = async (chat: Chat, message: string): Promise<Send
     if (groundingMetadata?.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
         finalGroundingChunks = groundingMetadata.groundingChunks
             .map((sdkChunk: SDKGroundingChunk): LocalGroundingChunk => {
-                const localChunk: LocalGroundingChunk = {};
+                const localChunk: LocalGroundingChunk = {}; 
                 if (sdkChunk.web) {
                     localChunk.web = { uri: sdkChunk.web.uri, title: sdkChunk.web.title };
                 }
