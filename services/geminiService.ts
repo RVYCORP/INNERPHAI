@@ -50,9 +50,16 @@ interface SendMessageResult {
 
 export const sendPhaiMessage = async (chat: Chat, message: string): Promise<SendMessageResult> => {
   try {
+    console.log("Sending message to Gemini:", message.trim());
     let response: GenerateContentResponse;
     response = await chat.sendMessage({ message: message.trim() }); 
 
+    console.log("Full Gemini response:", response);
+    console.log("Response text:", response.text);
+    console.log("Response text length:", response.text?.length);
+
+    const responseText = response.text || "";
+    
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
     let finalGroundingChunks: LocalGroundingChunk[] | undefined = undefined;
 
@@ -74,7 +81,8 @@ export const sendPhaiMessage = async (chat: Chat, message: string): Promise<Send
             .filter(chunk => chunk.web || chunk.retrievedContext); 
     }
 
-    return { text: response.text, groundingChunks: finalGroundingChunks };
+    console.log("Returning response with text length:", responseText.length);
+    return { text: responseText, groundingChunks: finalGroundingChunks };
 
   } catch (error) {
     console.error("Error sending message to Gemini:", error);

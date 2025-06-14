@@ -166,6 +166,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKeyAvailable }) => {
 
 
     // Type out the message
+    console.log("Starting typing animation for message:", fullAiText);
+    console.log("Full AI text length:", fullAiText.length);
+    
     let currentText = '';
     const timeouts: NodeJS.Timeout[] = [];
     for (let i = 0; i < fullAiText.length; i++) {
@@ -176,6 +179,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKeyAvailable }) => {
             msg.id === aiMessageId ? { ...msg, text: currentText } : msg
           )
         );
+        
+        // Log progress every 50 characters
+        if (i % 50 === 0 || i === fullAiText.length - 1) {
+          console.log(`Typing progress: ${i + 1}/${fullAiText.length} characters`);
+        }
       }, i * 30); // Typing speed
       timeouts.push(timeout);
     }
