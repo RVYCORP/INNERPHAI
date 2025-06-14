@@ -1,44 +1,34 @@
 
-import { GoogleGenAI, Chat, GenerateContentResponse, GroundingChunk as SDKGroundingChunk, Content } from "@google/genai";
+import { GoogleGenAI, Chat, GenerateContentResponse, GroundingChunk as SDKGroundingChunk } from "@google/genai";
 import { PHAI_SYSTEM_PROMPT, GEMINI_MODEL_NAME } from '../constants';
-import { Message as LocalMessage, GroundingChunk as LocalGroundingChunk, Sender } from "../types";
-
+import { GroundingChunk as LocalGroundingChunk } from "../types";
 
 let ai: GoogleGenAI | null = null;
 
 const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
 
-  const apiKey = import.meta.env.VITE_API_KEY; 
+  const apiKey = import.meta.env.VITE_API_KEY; // Use API_KEY directly from process.env per guidelines
 
   if (apiKey) {
-    console.log("Initializing GoogleGenAI with API key");
-    ai = new GoogleGenAI({ apiKey }); 
+    ai = new GoogleGenAI({ apiKey }); // Ensure apiKey is passed as an object property { apiKey: value }
     return ai;
   } else {
-    console.error("VITE_API_KEY is not available. Gemini Service cannot be initialized. Ensure import.meta.env.VITE_API_KEY is set.");
+    console.error("API_KEY is not available. Gemini Service cannot be initialized. Ensure process.env.API_KEY is set.");
     return null;
   }
 };
 
-export const convertMessagesToGeminiHistory = (messages: LocalMessage[]): Content[] => {
-  return messages.map(msg => ({
-    role: msg.sender === Sender.User ? 'user' : 'model',
-    parts: [{ text: msg.text }],
-  }));
-};
-
-export const startPhaiChat = (history?: Content[]): Chat | null => {
+export const startPhaiChat = (): Chat | null => {
   const currentAi = initializeAi();
   if (!currentAi) {
     return null;
   }
   return currentAi.chats.create({
     model: GEMINI_MODEL_NAME,
-    history: history || [], 
-    config: { 
+    config: { // config for ChatSession
       systemInstruction: PHAI_SYSTEM_PROMPT,
-      tools: [{ googleSearch: {} }] 
+      tools: [{ googleSearch: {} }] // Enable Google Search for the entire chat session
     },
   });
 };
@@ -50,23 +40,24 @@ interface SendMessageResult {
 
 export const sendPhaiMessage = async (chat: Chat, message: string): Promise<SendMessageResult> => {
   try {
-    console.log("Sending message to Gemini:", message.trim());
+    // The 'useSearch' variable is no longer needed here to decide on passing 'tools',
+    // as tools are configured at the chat session level.
+    // The model will use the search tool if appropriate based on the prompt.
+
     let response: GenerateContentResponse;
+
+    // Always send the message without dynamically adding 'tools'.
+    // The 'tools' (e.g., Google Search) are configured when the chat session is created.
     response = await chat.sendMessage({ message: message.trim() }); 
 
-    console.log("Full Gemini response:", response);
-    console.log("Response text:", response.text);
-    console.log("Response text length:", response.text?.length);
-
-    const responseText = response.text || "";
-    
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
     let finalGroundingChunks: LocalGroundingChunk[] | undefined = undefined;
 
     if (groundingMetadata?.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
+        // Map SDKGroundingChunk to LocalGroundingChunk for type safety and to match local definitions.
         finalGroundingChunks = groundingMetadata.groundingChunks
             .map((sdkChunk: SDKGroundingChunk): LocalGroundingChunk => {
-                const localChunk: LocalGroundingChunk = {}; 
+                const localChunk: LocalGroundingChunk = {}; // Initialize as empty LocalGroundingChunk
                 if (sdkChunk.web) {
                     localChunk.web = { uri: sdkChunk.web.uri, title: sdkChunk.web.title };
                 }
@@ -81,8 +72,7 @@ export const sendPhaiMessage = async (chat: Chat, message: string): Promise<Send
             .filter(chunk => chunk.web || chunk.retrievedContext); 
     }
 
-    console.log("Returning response with text length:", responseText.length);
-    return { text: responseText, groundingChunks: finalGroundingChunks };
+    return { text: response.text, groundingChunks: finalGroundingChunks };
 
   } catch (error) {
     console.error("Error sending message to Gemini:", error);
