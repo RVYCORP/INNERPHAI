@@ -9,8 +9,15 @@ const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
   
   const apiKey = import.meta.env.VITE_API_KEY;
+  
+  console.log("Environment check:", {
+    hasViteApiKey: !!apiKey,
+    viteApiKeyLength: apiKey ? apiKey.length : 0,
+    allEnvKeys: Object.keys(import.meta.env)
+  });
 
   if (apiKey) {
+    console.log("Initializing GoogleGenAI with API key");
     ai = new GoogleGenAI({ apiKey });
     return ai;
   } else {
