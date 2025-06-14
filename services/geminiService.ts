@@ -8,15 +8,13 @@ let ai: GoogleGenAI | null = null;
 const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
   
-  // In browser environment, we need to get API key from window or other method
-  // For now, let's check if it's available in the global scope or passed via other means
-  const apiKey = (window as any).API_KEY || import.meta.env.VITE_API_KEY;
+  const apiKey = import.meta.env.VITE_API_KEY;
 
   if (apiKey) {
     ai = new GoogleGenAI({ apiKey });
     return ai;
   } else {
-    console.error("API_KEY is not available. Gemini Service cannot be initialized. Ensure VITE_API_KEY is set or API_KEY is available globally.");
+    console.error("GEMINI_API_KEY is not available. Gemini Service cannot be initialized. Please ensure the GEMINI_API_KEY is set in Replit Secrets.");
     return null;
   }
 };
