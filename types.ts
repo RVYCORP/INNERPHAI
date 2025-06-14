@@ -9,6 +9,7 @@ export interface Message {
   text: string;
   sender: Sender;
   timestamp: Date;
+  groundingChunks?: GroundingChunk[];
 }
 
 export interface GroundingChunk {
@@ -21,4 +22,11 @@ export interface GroundingChunk {
     title: string;
   };
   // other potential grounding types
+}
+
+export interface ChatSessionData {
+  id: string;
+  name: string;
+  messages: Message[];
+  createdAt: string;
 }

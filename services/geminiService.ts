@@ -9,13 +9,14 @@ let ai: GoogleGenAI | null = null;
 const initializeAi = (): GoogleGenAI | null => {
   if (ai) return ai;
 
-  const apiKey = process.env.API_KEY; 
+  const apiKey = import.meta.env.VITE_API_KEY; 
 
   if (apiKey) {
+    console.log("Initializing GoogleGenAI with API key");
     ai = new GoogleGenAI({ apiKey }); 
     return ai;
   } else {
-    console.error("API_KEY is not available. Gemini Service cannot be initialized. Ensure process.env.API_KEY is set.");
+    console.error("VITE_API_KEY is not available. Gemini Service cannot be initialized. Ensure import.meta.env.VITE_API_KEY is set.");
     return null;
   }
 };
